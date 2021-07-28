@@ -3,6 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:loader_overlay/loader_overlay.dart';
+import 'package:sudachad/components/dialog_box.dart';
+import 'package:sudachad/components/submit_button.dart';
+import 'package:sudachad/theme/btn_styles.dart';
+import 'package:adaptive_dialog/adaptive_dialog.dart';
+import 'components/form_field.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,7 +49,11 @@ class _MyHomePageState extends State<MyHomePage> {
   final _formKey = GlobalKey<FormState>();
   //to check from db in order to desable the submit button
   bool isAvailable = true;
-  List<String> submitTo = ['manager', 'director', 'finance'];
+  Map<String, String> submitTo = {
+    'manager': 'uYPUYfiiClRf22R9QAMFdnnfv183',
+    'director': 'nXT3RfIImjTp6EkY4m7H8kthWOV2',
+    'finance': 'eA3EV2ZsyIUU3iKkXwXgoKhmp5I3',
+  };
 
   Future<void> addRencontre(nom, prenom, numeroMobile, raisonDeRencontre, to) {
     // Call the rencontres's CollectionReference to add a new user
@@ -54,7 +63,9 @@ class _MyHomePageState extends State<MyHomePage> {
           'prenom': prenom,
           'numeroMobile': numeroMobile,
           'raisonDeRencontre': raisonDeRencontre,
-          'to': to
+          'to': to,
+          'accepted': 'yet', //accept, reject, yet
+          'isNew': true
         })
         .then(
           (value) => print("new meeting created"),
@@ -64,195 +75,208 @@ class _MyHomePageState extends State<MyHomePage> {
         );
   }
 
+  Future<void> _showMyDialog(contextT, label, messageOne, messageTwo) async {
+    return showDialog<void>(
+      context: contextT,
+      barrierDismissible: false, // user must tap button!
+      builder: (_) {
+        return AlertDialog(
+          title: Text(label),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(messageOne),
+                Text(messageTwo),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Fermer'),
+              onPressed: () {
+                Navigator.of(contextT).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      body: SingleChildScrollView(
-        child: SafeArea(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(60.0),
-                  child: Image.asset(
-                    'assets/logo.png',
-                    width: 300.0,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  vertical: 100.0,
-                  horizontal: 200,
-                ),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      TextFormField(
-                        decoration: fieldBorder('Nom', theme),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'S\'il vous plait entrer votre nom';
-                          }
-                          return null;
-                        },
-                        onChanged: (value) {
-                          nom = value;
-                        },
-                      ),
-                      SizedBox(
-                        height: 40.0,
-                      ),
-                      TextFormField(
-                        decoration: fieldBorder('Prenom', theme),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'S\'il vous plait entrer votre prenom';
-                          }
-                          return null;
-                        },
-                        onChanged: (value) {
-                          prenom = value;
-                        },
-                      ),
-                      SizedBox(
-                        height: 40.0,
-                      ),
-                      TextFormField(
-                        decoration: fieldBorder('Numero de mobile', theme),
-                        validator: (value) {
-                          if (value == null) {
-                            return 'S\'il vous plait entrer votre numero mobile';
-                          }
-                          return null;
-                        },
-                        onChanged: (value) {
-                          numeroMobile = int.parse(value);
-                        },
-                      ),
-                      SizedBox(
-                        height: 40.0,
-                      ),
-                      TextFormField(
-                        decoration: fieldBorder('Raison de rencontre', theme),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'S\'il vous plait entrer votre raison';
-                          }
-                          return null;
-                        },
-                        onChanged: (value) {
-                          raisonDeRencontre = value;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(
-                height: 100.0,
-              ),
-              Padding(
-                padding: const EdgeInsets.all(40.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () async {
-                        context.loaderOverlay.show();
-                        await addRencontre(nom, prenom, numeroMobile,
-                            raisonDeRencontre, submitTo[0]);
-                        _formKey.currentState!.reset();
-                        context.loaderOverlay.hide();
-                      },
-                      child: Text('Manager'),
-                      style: bntStyle(
-                        context,
-                        theme.primaryColor,
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () async {
-                        context.loaderOverlay.show();
-                        await addRencontre(nom, prenom, numeroMobile,
-                            raisonDeRencontre, submitTo[1]);
-                        _formKey.currentState!.reset();
-                        context.loaderOverlay.hide();
-                      },
-                      child: Text('Directeur'),
-                      style: bntStyle(
-                        context,
-                        theme.primaryColor,
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () async {
-                        context.loaderOverlay.show();
+    final deviceSize = MediaQuery.of(context).size;
 
-                        await addRencontre(nom, prenom, numeroMobile,
-                            raisonDeRencontre, submitTo[2]);
-                        _formKey.currentState!.reset();
-                        context.loaderOverlay.hide();
+    //Firebase listener to display and dismiss dialog call
+    FirebaseFirestore.instance
+        .collection('rencontres')
+        .snapshots()
+        .listen((event) {
+      if (event.docs.isEmpty) {
+        return;
+      }
+
+      final data = event.docs[0];
+
+      if (data['accepted'] == 'accept' && data['isNew'] == false) {
+        _showMyDialog(context, '${data['nom']} ${data['prenom']}',
+            'Maintenant vous', 'pouvez entrez.');
+
+        FirebaseFirestore.instance
+            .collection('rencontres')
+            .doc(data.id)
+            .delete()
+            .then((value) => print("Meeting"))
+            .catchError((error) => print("Failed to delete meeting: $error"));
+      } else if (data['accepted'] == 'reject' && data['isNew'] == false) {
+        _showMyDialog(context, '${data['nom']} ${data['prenom']}',
+            'Vous etes prier de', 'repasser plus tard.');
+
+        FirebaseFirestore.instance
+            .collection('rencontres')
+            .doc(data.id)
+            .delete()
+            .then((value) => print("Meeting"))
+            .catchError((error) => print("Failed to delete meeting: $error"));
+      }
+    });
+
+    return Scaffold(
+      body: SafeArea(
+          child: SizedBox(
+        height: deviceSize.height,
+        child: ListView(
+          children: <Widget>[
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(60),
+                child: Image.asset(
+                  'assets/logo.png',
+                  width: deviceSize.width * .30,
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: deviceSize.height * 0.065,
+                horizontal: deviceSize.width * 0.2,
+              ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    Field(
+                      label: 'Nom',
+                      theme: theme,
+                      errorMssg: 'S\'il vous plait entrer votre nom',
+                      callBack: (value) {
+                        nom = value;
                       },
-                      child: Text('Finance'),
-                      style: bntStyle(
-                        context,
-                        theme.primaryColor,
-                      ),
+                    ),
+                    SizedBox(
+                      height: deviceSize.height * 0.04,
+                    ),
+                    Field(
+                      label: 'Prenom',
+                      theme: theme,
+                      errorMssg: 'S\'il vous plait entrer votre prenom',
+                      callBack: (value) {
+                        prenom = value;
+                      },
+                    ),
+                    SizedBox(
+                      height: deviceSize.height * 0.04,
+                    ),
+                    Field(
+                      label: 'Numero de mobile',
+                      theme: theme,
+                      errorMssg: 'S\'il vous plait entrer votre numero mobile',
+                      callBack: (value) {
+                        numeroMobile = int.parse(value);
+                      },
+                    ),
+                    SizedBox(
+                      height: deviceSize.height * 0.04,
+                    ),
+                    Field(
+                      label: 'Raison de rencontre',
+                      theme: theme,
+                      errorMssg:
+                          'S\'il vous plait entrer votre raison de rencontre',
+                      callBack: (value) {
+                        raisonDeRencontre = value;
+                      },
                     ),
                   ],
                 ),
-              )
-            ],
-          ),
+              ),
+            ),
+            SizedBox(
+              height: deviceSize.height * 0.04,
+            ),
+            Padding(
+              padding: const EdgeInsets.all(40.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  SubmitButton(
+                      context: context,
+                      label: 'Manager',
+                      color: theme.primaryColor,
+                      callBack: () async {
+                        context.loaderOverlay.show();
+                        await addRencontre(
+                          nom,
+                          prenom,
+                          numeroMobile,
+                          raisonDeRencontre,
+                          submitTo['manager'],
+                        );
+
+                        _formKey.currentState!.reset();
+                        context.loaderOverlay.hide();
+                      }),
+                  SubmitButton(
+                    context: context,
+                    label: 'Directeur',
+                    color: theme.primaryColor,
+                    callBack: () async {
+                      context.loaderOverlay.show();
+                      await addRencontre(
+                        nom,
+                        prenom,
+                        numeroMobile,
+                        raisonDeRencontre,
+                        submitTo['director'],
+                      );
+                      _formKey.currentState!.reset();
+                      context.loaderOverlay.hide();
+                    },
+                  ),
+                  SubmitButton(
+                    context: context,
+                    label: 'Finance',
+                    color: theme.primaryColor,
+                    callBack: () async {
+                      context.loaderOverlay.show();
+                      await addRencontre(
+                        nom,
+                        prenom,
+                        numeroMobile,
+                        raisonDeRencontre,
+                        submitTo['finance'],
+                      );
+                      _formKey.currentState!.reset();
+                      context.loaderOverlay.hide();
+                    },
+                  ),
+                ],
+              ),
+            )
+          ],
         ),
-      ),
+      )),
     );
   }
-}
-
-ButtonStyle bntStyle(BuildContext context, Color color) {
-  return ButtonStyle(
-    backgroundColor: MaterialStateProperty.all(color),
-    padding: MaterialStateProperty.all(
-      EdgeInsets.symmetric(vertical: 20.0, horizontal: 20.0),
-    ),
-    textStyle: MaterialStateProperty.all(
-      TextStyle(
-        fontSize: 28.0,
-      ),
-    ),
-  );
-}
-
-InputDecoration fieldBorder(hintText, ThemeData theme) {
-  return InputDecoration(
-    contentPadding: EdgeInsets.symmetric(
-      vertical: 30.0,
-      horizontal: 40.0,
-    ),
-    hintText: hintText,
-    hintStyle: TextStyle(
-      color: theme.accentColor,
-      fontSize: 22.0,
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderSide: BorderSide(
-        width: 4,
-        color: theme.primaryColor,
-      ),
-      borderRadius: BorderRadius.circular(4.0),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderSide: BorderSide(
-        width: 4,
-        color: theme.primaryColor,
-      ),
-      borderRadius: BorderRadius.circular(4.0),
-    ),
-  );
 }
