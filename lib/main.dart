@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
-// import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:loader_overlay/loader_overlay.dart';
-import 'package:sudachad/components/dialog_box.dart';
 import 'package:sudachad/components/submit_button.dart';
-import 'package:sudachad/theme/btn_styles.dart';
-import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'components/form_field.dart';
 
 void main() async {
@@ -48,13 +44,15 @@ class _MyHomePageState extends State<MyHomePage> {
   String raisonDeRencontre = '';
   final _formKey = GlobalKey<FormState>();
   //to check from db in order to desable the submit button
-  bool isAvailable = true;
+
+  //These are users uid from firebase signin
   Map<String, String> submitTo = {
     'manager': 'uYPUYfiiClRf22R9QAMFdnnfv183',
     'director': 'nXT3RfIImjTp6EkY4m7H8kthWOV2',
     'finance': 'eA3EV2ZsyIUU3iKkXwXgoKhmp5I3',
   };
 
+  //creating new meeting
   Future<void> addRencontre(nom, prenom, numeroMobile, raisonDeRencontre, to) {
     // Call the rencontres's CollectionReference to add a new user
     return rencontres
